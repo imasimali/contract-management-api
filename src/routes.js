@@ -17,5 +17,6 @@ router.post('/balances/deposit/:userId', getProfile, services.balanceDeposit);
 
 // Admin routes
 router.get('/admin/best-profession', services.getBestProfession);
+router.get('/admin/best-clients', services.getBestClients);
 
 module.exports = router;

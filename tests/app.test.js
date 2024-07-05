@@ -77,4 +77,13 @@ describe('API tests for admin', () => {
     expect(res.body).toHaveProperty('profession');
     expect(res.body.profession).toBe('Programmer');
   });
+
+  test('GET /admin/best-clients - should respect the specified limit parameter', async () => {
+    const startDate = '2020-08-01';
+    const endDate   = '2020-08-31';
+    const limit     = 3;
+    const res       = await request(app).get(`/admin/best-clients?start=${startDate}&end=${endDate}&limit=${limit}`);
+    expect(res.status).toBe(200);
+    expect(res.body.length).toBe(limit);
+  });
 });

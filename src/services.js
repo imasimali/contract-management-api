@@ -178,4 +178,46 @@ const getBestProfession = async (req, res, next) => {
   }
 };
 
-module.exports = { getContractById, getActiveContracts, getUnpaidJobs, payForJob, balanceDeposit, getBestProfession };
+const getBestClients = async (req, res, next) => {
+  try {
+    const { Profile, Contract, Job } = req.app.get('models');
+    const { start, end, limit = 2 }  = req.query;
+    const bestClients                = await Profile.findAll({
+      where     : { type: 'client' },
+      attributes: [
+        'id',
+        [fn('concat', col('firstName'), ' ', col('lastName')), 'fullName'],
+        [fn('SUM', col('ClientContracts.Jobs.price')), 'totalSpent'],
+      ],
+      include: [
+        {
+          model  : Contract,
+          as     : 'ClientContracts',
+          include: [
+            {
+              model: Job,
+              where: {
+                paid       : true,
+                paymentDate: { [Op.between]: [new Date(start), new Date(end)] },
+              },
+            },
+          ],
+        },
+      ],
+      group   : ['Profile.id'],
+      order   : [['totalSpent', 'DESC']],
+      subQuery: false,
+      limit,
+    });
+
+    if (bestClients.length) {
+      res.json(bestClients);
+    } else {
+      res.status(404).json({ message: 'No data available for the specified time range' });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getContractById, getActiveContracts, getUnpaidJobs, payForJob, balanceDeposit, getBestProfession, getBestClients };

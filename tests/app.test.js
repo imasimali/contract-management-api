@@ -53,3 +53,17 @@ describe('API tests for jobs', () => {
     expect(res.body.message).toContain('Payment successful');
   });
 });
+
+describe('API tests for balances', () => {
+  test('POST /balances/deposit/:userId - should reject deposit over 25% of total jobs to pay', async () => {
+    const res = await request(app).post('/balances/deposit/1').send({ amount: 1000 }).set('profile_id', '1');
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('Deposit limit exceeded');
+  });
+
+  test('POST /balances/deposit/:userId - should allow deposit within 25% of total jobs to pay', async () => {
+    const res = await request(app).post('/balances/deposit/1').send({ amount: 200 }).set('profile_id', '1');
+    expect(res.status).toBe(200);
+    expect(res.body.message).toContain('Deposit successful');
+  });
+});

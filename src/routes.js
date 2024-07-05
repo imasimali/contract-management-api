@@ -12,4 +12,7 @@ router.get('/contracts', getProfile, services.getActiveContracts);
 router.get('/jobs/unpaid', getProfile, services.getUnpaidJobs);
 router.post('/jobs/:jobId/pay', getProfile, services.payForJob);
 
+// Balance routes
+router.post('/balances/deposit/:userId', getProfile, services.balanceDeposit);
+
 module.exports = router;

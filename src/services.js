@@ -97,4 +97,48 @@ const payForJob = async (req, res, next) => {
   }
 };
 
-module.exports = { getContractById, getActiveContracts, getUnpaidJobs, payForJob };
+const balanceDeposit = async (req, res, next) => {
+  try {
+    const sequelize         = req.app.get('sequelize');
+    const { Job, Contract } = req.app.get('models');
+    const { userId }        = req.params;
+    const { amount }        = req.body;
+
+    if (!req.profile) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({ message: 'Invalid amount' });
+    }
+
+    if (req.profile.type !== 'client' || req.profile.id !== Number(userId)) {
+      return res.status(403).json({ message: 'Only clients can deposit to their own account' });
+    }
+
+    const totalJobsToPay = await Job.sum('price', {
+      where  : { paid: false, '$Contract.ClientId$': req.profile.id },
+      include: [Contract],
+    });
+
+    const maxDepositLimit = totalJobsToPay * 0.25;
+
+    if (req.body.amount > maxDepositLimit) {
+      return res.status(400).json({ message: 'Deposit limit exceeded' });
+    }
+
+    const transaction = await sequelize.transaction();
+    try {
+      await req.profile.increment('balance', { by: req.body.amount, transaction });
+      await transaction.commit();
+      res.json({ message: 'Deposit successful' });
+    } catch (error) {
+      await transaction.rollback();
+      res.status(500).json({ message: 'Transaction failed', error });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getContractById, getActiveContracts, getUnpaidJobs, payForJob, balanceDeposit };

@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 
 const getContractById = async (req, res, next) => {
   try {
@@ -141,4 +141,41 @@ const balanceDeposit = async (req, res, next) => {
   }
 };
 
-module.exports = { getContractById, getActiveContracts, getUnpaidJobs, payForJob, balanceDeposit };
+const getBestProfession = async (req, res, next) => {
+  try {
+    const { Profile, Contract, Job } = req.app.get('models');
+    const { start, end }             = req.query;
+    const [bestProfession]           = await Profile.findAll({
+      where     : { type: 'contractor' },
+      attributes: ['profession', [fn('SUM', col('ContractorContracts.Jobs.price')), 'totalEarned']],
+      include   : [
+        {
+          model  : Contract,
+          as     : 'ContractorContracts',
+          include: [
+            {
+              model: Job,
+              where: {
+                paid       : true,
+                paymentDate: { [Op.between]: [new Date(start), new Date(end)] },
+              },
+            },
+          ],
+        },
+      ],
+      group   : ['profession'],
+      order   : [['totalEarned', 'DESC']],
+      subQuery: false,
+    });
+
+    if (bestProfession) {
+      res.json(bestProfession);
+    } else {
+      res.status(404).json({ message: 'No data available for the specified time range' });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getContractById, getActiveContracts, getUnpaidJobs, payForJob, balanceDeposit, getBestProfession };

@@ -15,4 +15,7 @@ router.post('/jobs/:jobId/pay', getProfile, services.payForJob);
 // Balance routes
 router.post('/balances/deposit/:userId', getProfile, services.balanceDeposit);
 
+// Admin routes
+router.get('/admin/best-profession', services.getBestProfession);
+
 module.exports = router;

@@ -67,3 +67,14 @@ describe('API tests for balances', () => {
     expect(res.body.message).toContain('Deposit successful');
   });
 });
+
+describe('API tests for admin', () => {
+  test('GET /admin/best-profession - should accurately calculate the highest earning profession within date range', async () => {
+    const startDate = '2020-08-01';
+    const endDate   = '2020-08-31';
+    const res       = await request(app).get(`/admin/best-profession?start=${startDate}&end=${endDate}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('profession');
+    expect(res.body.profession).toBe('Programmer');
+  });
+});

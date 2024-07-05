@@ -87,3 +87,45 @@ describe('API tests for admin', () => {
     expect(res.body.length).toBe(limit);
   });
 });
+
+describe('API tests concurrency', () => {
+  test('POST /jobs/:jobId/pay - should allow multiple concurrent payments for the same job should not cause data inconsistencies', async () => {
+    const numConcurrentRequests = 10;
+    const promises              = [];
+
+    for (let i = 0; i < numConcurrentRequests; i++) {
+      promises.push(request(app).post(`/jobs/2/pay/`).set('profile_id', '1'));
+    }
+
+    const results          = await Promise.allSettled(promises);
+    const successResponses = results.filter((result) => result.status === 'fulfilled' && result.value.status === 200);
+    const errorResponses   = results.filter((result) => result.status === 'fulfilled' && result.value.status !== 200);
+
+    expect(successResponses.length).toBe(1);
+    expect(successResponses[0].value.body.message).toBe('Payment successful');
+
+    errorResponses.forEach((response) => {
+      expect(response.value.body.message).toBe('Job not found or already paid');
+    });
+  });
+
+  test('POST /balances/deposit/:userId - should allow multiple concurrent deposits for the same user should not cause data inconsistencies', async () => {
+    const numConcurrentRequests = 10;
+    const promises              = [];
+
+    for (let i = 0; i < numConcurrentRequests; i++) {
+      promises.push(request(app).post(`/balances/deposit/1`).send({ amount: 20 }).set('profile_id', '1'));
+    }
+
+    const results          = await Promise.allSettled(promises);
+    const successResponses = results.filter((result) => result.status === 'fulfilled' && result.value.status === 200);
+    const errorResponses   = results.filter((result) => result.status === 'fulfilled' && result.value.status !== 200);
+
+    expect(successResponses.length).toBe(numConcurrentRequests);
+    successResponses.forEach((response) => {
+      expect(response.value.body.message).toBe('Deposit successful');
+    });
+
+    expect(errorResponses.length).toBe(0);
+  });
+});

@@ -30,3 +30,14 @@ describe('API tests for contracts', () => {
     });
   });
 });
+
+describe('API tests for jobs', () => {
+  test('GET /jobs/unpaid - should return only unpaid jobs for active contracts', async () => {
+    const res = await request(app).get('/jobs/unpaid').set('profile_id', '1');
+    expect(res.status).toBe(200);
+    res.body.forEach((job) => {
+      expect(job.paid).toBe(false);
+      expect(['in_progress']).toContain(job.Contract.status);
+    });
+  });
+});

@@ -21,10 +21,12 @@ Profile.init(
       allowNull: false,
     },
     balance: {
-      type: Sequelize.DECIMAL(12, 2),
+      type        : Sequelize.DECIMAL(12, 2),
+      defaultValue: 0.0,
     },
     type: {
-      type: Sequelize.ENUM('client', 'contractor'),
+      type     : Sequelize.ENUM('client', 'contractor'),
+      allowNull: false,
     },
   },
   {
@@ -41,7 +43,9 @@ Contract.init(
       allowNull: false,
     },
     status: {
-      type: Sequelize.ENUM('new', 'in_progress', 'terminated'),
+      type        : Sequelize.ENUM('new', 'in_progress', 'terminated'),
+      defaultValue: 'new',
+      allowNull   : false,
     },
   },
   {
@@ -62,11 +66,12 @@ Job.init(
       allowNull: false,
     },
     paid: {
-      type   : Sequelize.BOOLEAN,
-      default: false,
+      type        : Sequelize.BOOLEAN,
+      defaultValue: false,
     },
     paymentDate: {
-      type: Sequelize.DATE,
+      type     : Sequelize.DATE,
+      allowNull: true,
     },
   },
   {
@@ -75,12 +80,14 @@ Job.init(
   }
 );
 
-Profile.hasMany(Contract, { as: 'Contractor', foreignKey: 'ContractorId' });
-Contract.belongsTo(Profile, { as: 'Contractor' });
-Profile.hasMany(Contract, { as: 'Client', foreignKey: 'ClientId' });
-Contract.belongsTo(Profile, { as: 'Client' });
-Contract.hasMany(Job);
-Job.belongsTo(Contract);
+Profile.hasMany(Contract, { as: 'ContractorContracts', foreignKey: 'ContractorId' });
+Contract.belongsTo(Profile, { as: 'Contractor', foreignKey: 'ContractorId' });
+
+Profile.hasMany(Contract, { as: 'ClientContracts', foreignKey: 'ClientId' });
+Contract.belongsTo(Profile, { as: 'Client', foreignKey: 'ClientId' });
+
+Contract.hasMany(Job, { foreignKey: 'ContractId' });
+Job.belongsTo(Contract, { foreignKey: 'ContractId' });
 
 module.exports = {
   sequelize,

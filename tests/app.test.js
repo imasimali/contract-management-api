@@ -40,4 +40,16 @@ describe('API tests for jobs', () => {
       expect(['in_progress']).toContain(job.Contract.status);
     });
   });
+
+  test('POST /jobs/:jobId/pay - should not allow payment if balance is insufficient', async () => {
+    const res = await request(app).post('/jobs/3/pay').set('profile_id', '4');
+    expect(res.status).toBe(403);
+    expect(res.body.message).toContain('Insufficient balance');
+  });
+
+  test('POST /jobs/:jobId/pay - should allow payment if balance is sufficient', async () => {
+    const res = await request(app).post('/jobs/3/pay').set('profile_id', '1');
+    expect(res.status).toBe(200);
+    expect(res.body.message).toContain('Payment successful');
+  });
 });

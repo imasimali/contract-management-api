@@ -57,4 +57,44 @@ const getUnpaidJobs = async (req, res, next) => {
   }
 };
 
-module.exports = { getContractById, getActiveContracts, getUnpaidJobs };
+const payForJob = async (req, res, next) => {
+  try {
+    const sequelize         = req.app.get('sequelize');
+    const { Job, Contract } = req.app.get('models');
+    const { jobId }         = req.params;
+
+    const job = await Job.findOne({
+      where  : { id: jobId, paid: { [Op.not]: true } },
+      include: [{ model: Contract, include: ['Contractor'] }],
+    });
+
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found or already paid' });
+    }
+
+    if (req.profile.balance < job.price) {
+      return res.status(403).json({ message: 'Insufficient balance' });
+    }
+
+    if (job.Contract.ContractorId === req.profile.id) {
+      return res.status(403).json({ message: 'Contractors cannot pay for their own jobs' });
+    }
+
+    const transaction = await sequelize.transaction();
+    try {
+      await req.profile.decrement('balance', { by: job.price, transaction });
+      await job.Contract.Contractor.increment('balance', { by: job.price, transaction });
+      await job.update({ paid: true, paymentDate: new Date() }, { transaction });
+
+      await transaction.commit();
+      res.json({ message: 'Payment successful' });
+    } catch (error) {
+      await transaction.rollback();
+      res.status(500).json({ message: 'Transaction failed', error });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getContractById, getActiveContracts, getUnpaidJobs, payForJob };

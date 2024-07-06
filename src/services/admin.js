@@ -1,4 +1,4 @@
-const { Op, fn, col } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 
 class AdminService {
   constructor(models) {
@@ -7,29 +7,34 @@ class AdminService {
     this.Job      = models.Job;
   }
 
-  async getBestProfession(req, res, next) {
+  getBestProfession = async (req, res, next) => {
     try {
-      const { start, end }   = req.query;
-      const [bestProfession] = await this.Profile.findAll({
+      const { start, end } = req.query;
+      const startDate      = new Date(start);
+      const endDate        = new Date(end);
+
+      const bestProfession = await this.Profile.findOne({
         where     : { type: 'contractor' },
         attributes: ['profession', [fn('SUM', col('ContractorContracts.Jobs.price')), 'totalEarned']],
         include   : [
           {
-            model  : this.Contract,
-            as     : 'ContractorContracts',
-            include: [
+            model     : this.Contract,
+            as        : 'ContractorContracts',
+            attributes: [],
+            include   : [
               {
-                model: this.Job,
-                where: {
+                model     : this.Job,
+                attributes: [],
+                where     : {
                   paid       : true,
-                  paymentDate: { [Op.between]: [new Date(start), new Date(end)] },
+                  paymentDate: { [Op.between]: [startDate, endDate] },
                 },
               },
             ],
           },
         ],
-        group   : ['profession'],
-        order   : [['totalEarned', 'DESC']],
+        group   : ['Profile.profession'],
+        order   : [[literal('totalEarned'), 'DESC']],
         subQuery: false,
       });
 
@@ -41,12 +46,15 @@ class AdminService {
     } catch (err) {
       next(err);
     }
-  }
+  };
 
-  async getBestClients(req, res, next) {
+  getBestClients = async (req, res, next) => {
     try {
       const { start, end, limit = 2 } = req.query;
-      const bestClients               = await this.Profile.findAll({
+      const startDate                 = new Date(start);
+      const endDate                   = new Date(end);
+
+      const bestClients = await this.Profile.findAll({
         where     : { type: 'client' },
         attributes: [
           'id',
@@ -55,23 +63,25 @@ class AdminService {
         ],
         include: [
           {
-            model  : this.Contract,
-            as     : 'ClientContracts',
-            include: [
+            model     : this.Contract,
+            as        : 'ClientContracts',
+            attributes: [],
+            include   : [
               {
-                model: this.Job,
-                where: {
+                model     : this.Job,
+                attributes: [],
+                where     : {
                   paid       : true,
-                  paymentDate: { [Op.between]: [new Date(start), new Date(end)] },
+                  paymentDate: { [Op.between]: [startDate, endDate] },
                 },
               },
             ],
           },
         ],
         group   : ['Profile.id'],
-        order   : [['totalSpent', 'DESC']],
+        order   : [[literal('totalSpent'), 'DESC']],
+        limit   : parseInt(limit, 10),
         subQuery: false,
-        limit,
       });
 
       if (bestClients.length) {
@@ -82,7 +92,7 @@ class AdminService {
     } catch (err) {
       next(err);
     }
-  }
+  };
 }
 
 module.exports = { AdminService };

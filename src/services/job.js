@@ -8,7 +8,7 @@ class JobService {
     this.paymentQueueService = paymentQueueService;
   }
 
-  async getUnpaidJobs(req, res, next) {
+  getUnpaidJobs = async (req, res, next) => {
     try {
       const unpaidJobs = await this.Job.findAll({
         include: [
@@ -27,9 +27,9 @@ class JobService {
     } catch (err) {
       next(err);
     }
-  }
+  };
 
-  async payForJob(req, res, next) {
+  payForJob = async (req, res, next) => {
     try {
       this.paymentQueueService.enqueue(async () => {
         const { jobId } = req.params;
@@ -67,9 +67,9 @@ class JobService {
     } catch (err) {
       next(err);
     }
-  }
+  };
 
-  async balanceDeposit(req, res, next) {
+  balanceDeposit = async (req, res, next) => {
     try {
       this.paymentQueueService.enqueue(async () => {
         const { userId } = req.params;
@@ -111,7 +111,7 @@ class JobService {
     } catch (err) {
       next(err);
     }
-  }
+  };
 }
 
 module.exports = { JobService };

@@ -5,14 +5,13 @@ class ContractService {
     this.Contract = models.Contract;
   }
 
-  async getContractById(req, res, next) {
+  getContractById = async (req, res, next) => {
     try {
       const { id }   = req.params;
       const contract = await this.Contract.findOne({
         where: {
           id,
           [Op.or]: [{ ClientId: req.profile.id }, { ContractorId: req.profile.id }],
-          status : 'in_progress',
         },
       });
       if (!contract) {
@@ -22,9 +21,9 @@ class ContractService {
     } catch (err) {
       next(err);
     }
-  }
+  };
 
-  async getActiveContracts(req, res, next) {
+  getActiveContracts = async (req, res, next) => {
     try {
       const contracts = await this.Contract.findAll({
         where: {
@@ -36,7 +35,7 @@ class ContractService {
     } catch (err) {
       next(err);
     }
-  }
+  };
 }
 
 module.exports = { ContractService };

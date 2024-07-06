@@ -7,17 +7,26 @@ function makeHttpService(dbModels, contractService, jobService, adminService) {
 
   app.set('models', dbModels);
 
-  app.get('/contracts/:id', getProfile, (req, res, next) => contractService.getContractById(req, res, next));
-  app.get('/contracts', getProfile, (req, res, next) => contractService.getActiveContracts(req, res, next));
+  // Contract routes
+  app.get('/contracts/:id', getProfile, contractService.getContractById);
+  app.get('/contracts', getProfile, contractService.getActiveContracts);
 
-  app.get('/jobs/unpaid', getProfile, (req, res, next) => jobService.getUnpaidJobs(req, res, next));
-  app.post('/jobs/:jobId/pay', getProfile, (req, res, next) => jobService.payForJob(req, res, next));
-  app.post('/balances/deposit/:userId', getProfile, (req, res, next) => jobService.balanceDeposit(req, res, next));
+  // Job routes
+  app.get('/jobs/unpaid', getProfile, jobService.getUnpaidJobs);
+  app.post('/jobs/:jobId/pay', getProfile, jobService.payForJob);
+  app.post('/balances/deposit/:userId', getProfile, jobService.balanceDeposit);
 
-  app.get('/admin/best-profession', (req, res, next) => adminService.getBestProfession(req, res, next));
-  app.get('/admin/best-clients', (req, res, next) => adminService.getBestClients(req, res, next));
+  // Admin routes
+  app.get('/admin/best-profession', adminService.getBestProfession);
+  app.get('/admin/best-clients', adminService.getBestClients);
 
+  // Error handling middleware
   app.use(errorHandler);
+
+  // 404 route
+  app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found' });
+  });
 
   return app;
 }

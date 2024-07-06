@@ -1,0 +1,326 @@
+openapi: 3.0.3
+info:
+  title: Deel Backend Task API
+  description: API for managing profiles, contracts, and jobs in the Deel backend task.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3001
+    description: Local server
+
+components:
+  schemas:
+    Id:
+      type: integer
+      example: 1
+      nullable: false
+
+    String:
+      type: string
+      minLength: 1
+      nullable: false
+
+    Balance:
+      type: number
+      format: float
+      example: 1150.00
+      minimum: 0
+      nullable: false
+
+    Profile:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        firstName:
+          $ref: '#/components/schemas/String'
+        lastName:
+          $ref: '#/components/schemas/String'
+        profession:
+          $ref: '#/components/schemas/String'
+        balance:
+          $ref: '#/components/schemas/Balance'
+        type:
+          type: string
+          enum: [client, contractor]
+          example: client
+          nullable: false
+
+    Contract:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        terms:
+          $ref: '#/components/schemas/String'
+        status:
+          type: string
+          enum: [new, in_progress, terminated]
+          example: in_progress
+          nullable: false
+        ClientId:
+          $ref: '#/components/schemas/Id'
+        ContractorId:
+          $ref: '#/components/schemas/Id'
+
+    Job:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        description:
+          $ref: '#/components/schemas/String'
+        price:
+          $ref: '#/components/schemas/Balance'
+        paid:
+          type: boolean
+          example: false
+          nullable: false
+        paymentDate:
+          type: string
+          format: date-time
+          example: 2020-08-15T19:11:26.737Z
+          nullable: true
+        ContractId:
+          $ref: '#/components/schemas/Id'
+
+    Amount:
+      type: number
+      format: float
+      example: 100.0
+      minimum: 0
+      nullable: false
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: An error occurred.
+
+  parameters:
+    ProfileIdHeader:
+      in: header
+      name: profile_id
+      required: true
+      schema:
+        type: integer
+        example: 1
+      description: Profile ID for authenticated user
+
+paths:
+  /contracts/{id}:
+    get:
+      summary: Get contract by ID
+      description: Returns the contract only if it belongs to the profile calling.
+      parameters:
+        - $ref: '#/components/parameters/ProfileIdHeader'
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+          description: The ID of the contract
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+        '403':
+          description: Forbidden, contract does not belong to the profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Contract not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /contracts:
+    get:
+      summary: Get contracts
+      description: Returns a list of contracts belonging to a user (client or contractor). The list should only contain non-terminated contracts.
+      parameters:
+        - $ref: '#/components/parameters/ProfileIdHeader'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Contract'
+
+  /jobs/unpaid:
+    get:
+      summary: Get unpaid jobs
+      description: Get all unpaid jobs for a user (either a client or contractor), for active contracts only.
+      parameters:
+        - $ref: '#/components/parameters/ProfileIdHeader'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Job'
+
+  /jobs/{job_id}/pay:
+    post:
+      summary: Pay for a job
+      description: Pay for a job, a client can only pay if his balance >= the amount to pay. The amount should be moved from the client's balance to the contractor's balance.
+      parameters:
+        - $ref: '#/components/parameters/ProfileIdHeader'
+        - in: path
+          name: job_id
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+          description: The ID of the job
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request, insufficient balance or job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden, client does not have access to this job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /balances/deposit/{userId}:
+    post:
+      summary: Deposit money
+      description: Deposits money into the balance of a client, a client can't deposit more than 25% of their total jobs to pay at the deposit moment.
+      parameters:
+        - $ref: '#/components/parameters/ProfileIdHeader'
+        - in: path
+          name: userId
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  $ref: '#/components/schemas/Amount'
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request, deposit amount exceeds 25% limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/best-profession:
+    get:
+      summary: Get best profession
+      description: Returns the profession that earned the most money (sum of jobs paid) for any contractor that worked in the query time range.
+      parameters:
+        - in: query
+          name: start
+          required: true
+          schema:
+            type: string
+            format: date
+            nullable: false
+          description: The start date of the query range
+        - in: query
+          name: end
+          required: true
+          schema:
+            type: string
+            format: date
+            nullable: false
+          description: The end date of the query range
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profession:
+                    type: string
+                    example: Programmer
+                    nullable: false
+                  totalEarned:
+                    type: number
+                    format: float
+                    example: 5000.00
+                    nullable: false
+
+  /admin/best-clients:
+    get:
+      summary: Get best clients
+      description: Returns the clients that paid the most for jobs in the query time period. Limit query parameter should be applied, default limit is 2.
+      parameters:
+        - in: query
+          name: start
+          required: true
+          schema:
+            type: string
+            format: date
+            nullable: false
+          description: The start date of the query range
+        - in: query
+          name: end
+          required: true
+          schema:
+            type: string
+            format: date
+            nullable: false
+          description: The end date of the query range
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 2
+            minimum: 1
+            nullable: false
+          description: The number of top clients to return
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      $ref: '#/components/schemas/Id'
+                    fullName:
+                      type: string
+                      example: Reece Moyer
+                      nullable: false
+                    paid:
+                      $ref: '#/components/schemas/Balance'
+        '400':
+          description: Bad request, invalid date range or limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

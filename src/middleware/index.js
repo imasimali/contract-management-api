@@ -7,8 +7,10 @@ const getProfile = async (req, res, next) => {
 };
 
 const errorHandler = (err, req, res, next) => {
-  console.error(err);
-  res.status(500).end();
+  res.status(err.status || 500).json({
+    message: err.message,
+    errors : err.errors,
+  });
 };
 
 module.exports = { getProfile, errorHandler };

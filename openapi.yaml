@@ -97,6 +97,14 @@ components:
           type: string
           example: An error occurred.
 
+    SuccessMessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Operation successful
+          nullable: false
+
   parameters:
     ProfileIdHeader:
       in: header
@@ -187,6 +195,10 @@ paths:
       responses:
         '200':
           description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
         '400':
           description: Bad request, insufficient balance or job not found
           content:
@@ -195,6 +207,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Forbidden, client does not have access to this job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Job not found
           content:
             application/json:
               schema:
@@ -224,6 +242,10 @@ paths:
       responses:
         '200':
           description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
         '400':
           description: Bad request, deposit amount exceeds 25% limit
           content:

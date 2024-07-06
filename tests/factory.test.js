@@ -19,7 +19,7 @@ describe('API tests cases', () => {
   describe('API tests for contracts', () => {
     test('GET /contracts/:id - should handle unauthorized access', async () => {
       const res = await request(app).get('/contracts/1').set('profile_id', 'nonexistent');
-      expect(res.status).toBe(401);
+      expect(res.status).toBe(400);
     });
 
     test('GET /contracts/:id - should deny access for wrong user', async () => {

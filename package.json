@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "express": "^4.17.1",
+    "express-openapi-validator": "^5.2.0",
     "sequelize": "^6.23.0",
     "sqlite3": "^5.0.0"
   },

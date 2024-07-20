@@ -1,6 +1,6 @@
 {
-  "name": "deel-task",
-  "version": "0.1.0",
+  "name": "contract-management-api",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
     "express": "^4.17.1",

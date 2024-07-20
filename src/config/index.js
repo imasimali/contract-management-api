@@ -2,8 +2,8 @@ function makeConfig(penv = process.env) {
   const app = {
     env      : penv.NODE_ENV || 'development',
     namespace: penv.APP_NAMESPACE || 'api',
-    name     : penv.APP_NAME || 'deel-task-api',
-    version  : penv.APP_VERSION || '0.1.0',
+    name     : penv.APP_NAME || 'contract-management-api',
+    version  : penv.APP_VERSION || '1.0.0',
     port     : parseInt(penv.PORT, 10) || 3001,
   };
 

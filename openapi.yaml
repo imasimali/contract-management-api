@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  title: Deel Backend Task API
-  description: API for managing profiles, contracts, and jobs in the Deel backend task.
+  title: Contract Management API
+  description: Node.js/Express.js REST API for managing client and contractor profiles, contracts, and jobs, built with Sequelize and SQLite.
   version: 1.0.0
 servers:
   - url: http://localhost:3001
